@@ -78,6 +78,8 @@ The headings below describe each field of the use-case template (Wiegers & Beatt
 ***Associated Information***
 *Identify any additional requirements, such as quality attributes, for the use case that may need to be addressed during design or implementation. Also list any associated functional requirements that aren't a direct part of the use case flows but which a developer needs to know about. Describe what should happen if the use case execution fails for some unanticipated or systemic reason (e.g., loss of network connectivity, timeout). If the use case results in a durable state change in a database or the outside world, state whether the change is rolled back, completed correctly, partially completed with a known state, or left in an undetermined state as a result of the exception.*
 
+- Reactivation restores the student's account access but does not create or change team assignments. Because deactivation retains the student's existing team and course section membership (BR-student-deactivation-membership), those associations remain unless explicitly changed through the appropriate management use case. Previously submitted activity reports and peer evaluations remain unchanged.
+
 ***Assumptions***
 *List any assumptions that were made regarding this use case or how it might execute.*
 
