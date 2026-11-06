@@ -51,7 +51,14 @@ The headings below describe each field of the use-case template (Wiegers & Beatt
 ***Main Success Scenario/Normal Flow***
 *Provide a description of the user actions and corresponding system responses that will take place during execution of the use case under normal, expected conditions. This dialog sequence will ultimately lead to accomplishing the goal stated in the use case name and description. Show a numbered list of actions performed by the actor, alternating with responses provided by the system. The normal flow is numbered "X.0", where "X" is the use case ID.*
 
-***Extensions:***
+
+
+**Extensions:**
+- **2a. Student not found:** The system reports that the selected student does not exist. No account is changed. The use case ends.
+- **3a. Student already deactivated:** The system reports that the student's account is already inactive. No account is changed. The use case ends.
+- **3b. Actor lacks permission:** If the actor is neither a course admin nor an instructor assigned to the student's course section, the system denies deactivation (BR-student-lifecycle). No account is changed. The use case ends.
+- **4a. Actor cancels:** The course admin or instructor cancels or dismisses the confirmation. The system makes no changes. The use case ends.
+- **6a. Deactivation fails:** The system reports that deactivation could not be completed. The student's existing state and historical records remain unchanged. The use case ends.
 
 - ***Alternative Flows***
   *Document other successful usage scenarios that can take place within this use case. State the alternative flow, and describe any differences in the sequence of steps that take place. Number each alternative flow in the form "X.Y", where "X" is the use case ID and Y is a sequence number for the alternative flow. For example, "5.3" would indicate the third alternative flow for use case number 5. Indicate where each alternative flow would branch off from the normal flow, and if pertinent, where it would rejoin the normal flow.*
