@@ -1,5 +1,6 @@
 package team.projectpulse.student;
 
+import team.projectpulse.system.exception.ObjectNotFoundException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.AfterEach;
 import team.projectpulse.instructor.Instructor;
@@ -202,6 +203,18 @@ void testDeactivateAlreadyInactiveStudent() {
     assertThatThrownBy(() -> this.studentService.deactivateStudent(1))
             .isInstanceOf(IllegalStateException.class)
             .hasMessage("Student is already deactivated.");
+
+    verify(this.studentRepository, never())
+            .save(any(Student.class));
+}
+
+    @Test
+void testDeactivateMissingStudent() {
+    given(this.studentRepository.findById(999))
+            .willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> this.studentService.deactivateStudent(999))
+            .isInstanceOf(ObjectNotFoundException.class);
 
     verify(this.studentRepository, never())
             .save(any(Student.class));
