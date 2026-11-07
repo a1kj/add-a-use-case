@@ -461,6 +461,7 @@ void testRejectEvaluationOfDeactivatedStudent() {
     verify(this.evaluationRepository, org.mockito.Mockito.never())
             .save(any(PeerEvaluation.class));
 }
+    @Test
     void testUpdatePeerEvaluation() {
         // Given
         // Aug 8, 2023 falls in 2023-W32, which makes 2023-W31 the previous week and this evaluation's window open
