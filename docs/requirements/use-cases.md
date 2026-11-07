@@ -51,7 +51,14 @@ The headings below describe each field of the use-case template (Wiegers & Beatt
 ***Main Success Scenario/Normal Flow***
 *Provide a description of the user actions and corresponding system responses that will take place during execution of the use case under normal, expected conditions. This dialog sequence will ultimately lead to accomplishing the goal stated in the use case name and description. Show a numbered list of actions performed by the actor, alternating with responses provided by the system. The normal flow is numbered "X.0", where "X" is the use case ID.*
 
-***Extensions:***
+
+
+**Extensions:**
+- **2a. Student not found:** The system reports that the selected student does not exist. No account is changed. The use case ends.
+- **3a. Student already deactivated:** The system reports that the student's account is already inactive. No account is changed. The use case ends.
+- **3b. Actor lacks permission:** If the actor is neither a course admin nor an instructor assigned to the student's course section, the system denies deactivation (BR-student-lifecycle). No account is changed. The use case ends.
+- **4a. Actor cancels:** The course admin or instructor cancels or dismisses the confirmation. The system makes no changes. The use case ends.
+- **6a. Deactivation fails:** The system reports that deactivation could not be completed. The student's existing state and historical records remain unchanged. The use case ends.
 
 - ***Alternative Flows***
   *Document other successful usage scenarios that can take place within this use case. State the alternative flow, and describe any differences in the sequence of steps that take place. Number each alternative flow in the form "X.Y", where "X" is the use case ID and Y is a sequence number for the alternative flow. For example, "5.3" would indicate the third alternative flow for use case number 5. Indicate where each alternative flow would branch off from the normal flow, and if pertinent, where it would rejoin the normal flow.*
@@ -70,6 +77,8 @@ The headings below describe each field of the use-case template (Wiegers & Beatt
 
 ***Associated Information***
 *Identify any additional requirements, such as quality attributes, for the use case that may need to be addressed during design or implementation. Also list any associated functional requirements that aren't a direct part of the use case flows but which a developer needs to know about. Describe what should happen if the use case execution fails for some unanticipated or systemic reason (e.g., loss of network connectivity, timeout). If the use case results in a durable state change in a database or the outside world, state whether the change is rolled back, completed correctly, partially completed with a known state, or left in an undetermined state as a result of the exception.*
+
+- Reactivation restores the student's account access but does not create or change team assignments. Because deactivation retains the student's existing team and course section membership (BR-student-deactivation-membership), those associations remain unless explicitly changed through the appropriate management use case. Previously submitted activity reports and peer evaluations remain unchanged.
 
 ***Assumptions***
 *List any assumptions that were made regarding this use case or how it might execute.*
@@ -1475,10 +1484,12 @@ Details:
 **Extensions:**
 **Priority:** Low
 **Frequency of Use:** Rare. Occurs occasionally when a student withdraws from a course section.
-**Business Rules:** BR-student-lifecycle
+**Business Rules:** BR-student-lifecycle, BR-student-deactivation-membership, BR-deactivated-student-evaluations, BR-submission-owed
 
 **Associated Information:**
 - Consequence of the deactivation: The student will no longer be able to log in or submit weekly activity reports and peer evaluations, but the student's account and her previously submitted work are kept in the system. Deactivation will NOT remove the student from the system, and the account can be reactivated in the future (UC-STU-reactivate-student: Reactivate a student). This is distinct from deletion (UC-STU-delete-student: Delete a student), which is a physical, unrecoverable delete. The course admin or instructor shall be able to cancel the use case at any time prior to submitting it.
+- Team membership and historical records: Deactivation retains the student's team and course section associations (BR-student-deactivation-membership). Previously submitted work remains available to authorized instructors.
+- Peer evaluations: Inactive students do not create new peer-evaluation obligations or accept new evaluations (BR-submission-owed, BR-deactivated-student-evaluations). Historical reports remain accessible, including previously recorded results.
 
 **Related Use Cases:** UC-STU-delete-student: Delete a student; UC-STU-reactivate-student: Reactivate a student
 **Assumptions:**
