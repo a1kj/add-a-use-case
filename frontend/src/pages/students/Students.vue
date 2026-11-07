@@ -60,16 +60,6 @@
   </template>
 </el-table-column>
 
-        <template #default="{ row }">
-          <el-button
-            icon="Edit"
-            circle
-            plain
-            type="primary"
-            @click.stop="showEditStudentDialog(row)"
-          ></el-button>
-        </template>
-      </el-table-column>
       <template #empty>
         <el-empty description="No data is available." />
       </template>
@@ -99,7 +89,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { searchStudents, deactivateStudent } from '@/apis/student'
-  import type {
+import type {
   SearchStudentByCriteriaResponse,
   Student,
   StudentSearchCriteria
