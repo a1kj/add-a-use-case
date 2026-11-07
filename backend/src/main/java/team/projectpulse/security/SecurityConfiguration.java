@@ -1,5 +1,12 @@
 package team.projectpulse.security;
 
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import team.projectpulse.user.UserRepository;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -135,7 +142,10 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+   public SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        StudentDeactivationAuthorizationManager studentDeactivationAuthorizationManager
+) throws Exception {
         return http
                 .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                         // Security rules for the /courses/** endpoint.
@@ -201,6 +211,10 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, this.baseUrl + "/instructors/courses/{courseId}/default").access(this.courseMembershipAuthorizationManager)
 
                         // Security rules for the /students/** endpoint.
+                                       .requestMatchers(
+        HttpMethod.POST,
+        this.baseUrl + "/students/{studentId}/deactivate"
+).access(studentDeactivationAuthorizationManager)
                         .requestMatchers(HttpMethod.POST, this.baseUrl + "/students/search").hasAuthority("ROLE_instructor")
                         .requestMatchers(HttpMethod.POST, this.baseUrl + "/students").permitAll()
                         .requestMatchers(HttpMethod.GET, this.baseUrl + "/students/{studentId}").access(this.userOwnershipAuthorizationManager)
@@ -340,11 +354,38 @@ public class SecurityConfiguration {
         JWKSource<SecurityContext> jwkSet = new ImmutableJWKSet<>(new JWKSet(jwk));
         return new NimbusJwtEncoder(jwkSet);
     }
+@Bean
+public JwtDecoder jwtDecoder(UserRepository userRepository) {
+    NimbusJwtDecoder decoder =
+            NimbusJwtDecoder.withPublicKey(this.publicKey).build();
 
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(this.publicKey).build();
-    }
+    OAuth2TokenValidator<Jwt> activeAccountValidator = jwt -> {
+        boolean active = userRepository.findByUsername(jwt.getSubject())
+                .map(user -> user.isEnabled())
+                .orElse(false);
+
+        if (!active) {
+            return OAuth2TokenValidatorResult.failure(
+                    new OAuth2Error(
+                            "invalid_token",
+                            "Account is deactivated or unavailable",
+                            null
+                    )
+            );
+        }
+
+        return OAuth2TokenValidatorResult.success();
+    };
+
+    decoder.setJwtValidator(
+            new DelegatingOAuth2TokenValidator<>(
+                    JwtValidators.createDefault(),
+                    activeAccountValidator
+            )
+    );
+
+    return decoder;
+}
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {

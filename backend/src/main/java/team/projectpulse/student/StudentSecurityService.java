@@ -46,5 +46,35 @@ public class StudentSecurityService {
         return student.getSection().getInstructors().stream()
                 .anyMatch(instructor -> instructor.getId().equals(instructorIdFromJwt));
     }
+public boolean canCurrentUserDeactivateStudent(Integer studentId) {
+    Student student = this.studentRepository.findById(studentId)
+            .orElse(null);
 
+    if (student == null || student.getSection() == null) {
+        return false;
+    }
+
+   Integer currentUserId = this.userUtils.getUserId();
+
+if (currentUserId == null) {
+    return false;
+}
+
+if (!this.userUtils.hasRole("ROLE_instructor")) {
+    return false;
+}
+
+    var section = student.getSection();
+
+    boolean assignedInstructor = section.getInstructors().stream()
+            .anyMatch(instructor ->
+                    currentUserId.equals(instructor.getId()));
+
+    boolean courseAdmin = section.getCourse() != null
+            && section.getCourse().getCourseAdmin() != null
+            && currentUserId.equals(
+                    section.getCourse().getCourseAdmin().getId());
+
+    return assignedInstructor || courseAdmin;
+}
 }

@@ -49,6 +49,19 @@ public class EvaluationService {
     }
 
     public PeerEvaluation addPeerEvaluation(PeerEvaluation newPeerEvaluation) {
+        // Reject evaluations of deactivated students.
+// Read the current database state instead of trusting the request payload.
+Student evaluatee = this.studentRepository
+        .findById(newPeerEvaluation.getEvaluatee().getId())
+        .orElseThrow(() -> new PeerEvaluationIllegalArgumentException(
+                "The student being evaluated does not exist."
+        ));
+
+if (!evaluatee.isEnabled()) {
+    throw new PeerEvaluationIllegalArgumentException(
+            "Cannot submit a peer evaluation for a deactivated student."
+    );
+}
         // Make sure the submission week is one of the course section's active weeks and is still open for submission
         requireOpenSubmissionWindow(newPeerEvaluation.getEvaluator().getSection(), newPeerEvaluation.getWeek(), NOT_PREVIOUS_WEEK_MESSAGE);
 
@@ -78,6 +91,17 @@ public class EvaluationService {
     public PeerEvaluation updatePeerEvaluation(Integer evaluationId, PeerEvaluation update) {
         return this.evaluationRepository.findById(evaluationId)
                 .map(oldEvaluation -> {
+                    Student evaluatee = this.studentRepository
+        .findById(oldEvaluation.getEvaluatee().getId())
+        .orElseThrow(() -> new PeerEvaluationIllegalArgumentException(
+                "The student being evaluated does not exist."
+        ));
+
+if (!evaluatee.isEnabled()) {
+    throw new PeerEvaluationIllegalArgumentException(
+            "Cannot update a peer evaluation for a deactivated student."
+    );
+}
                     // The week is read off the stored evaluation rather than off the update, because the caller
                     // writes the payload and could otherwise name an open week to reopen a closed evaluation.
                     requireOpenSubmissionWindow(oldEvaluation.getEvaluator().getSection(), oldEvaluation.getWeek(), WINDOW_CLOSED_MESSAGE);

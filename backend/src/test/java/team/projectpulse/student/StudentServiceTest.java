@@ -1,5 +1,7 @@
 package team.projectpulse.student;
 
+import team.projectpulse.system.exception.ObjectNotFoundException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.AfterEach;
 import team.projectpulse.instructor.Instructor;
 import team.projectpulse.section.Section;
@@ -174,10 +176,51 @@ class StudentServiceTest {
         assertThat(result.getLastName()).isEqualTo(update.getLastName());
         assertThat(result.getEmail()).isEqualTo(update.getEmail());
 //        assertThat(result.getRoles()).isEqualTo(update.getRoles());
-        assertThat(result.isEnabled()).isEqualTo(update.isEnabled());
-    }
+assertThat(result.isEnabled()).isTrue();    }
+    
+@Test
+void testDeactivateActiveStudent() {
+    Student student = this.students.get(0);
+    given(this.studentRepository.findById(1))
+            .willReturn(Optional.of(student));
+    given(this.studentRepository.save(student))
+            .willReturn(student);
+
+    Student result = this.studentService.deactivateStudent(1);
+
+    assertThat(result.isEnabled()).isFalse();
+    verify(this.studentRepository).save(student);
+}
+
+@Test
+void testDeactivateAlreadyInactiveStudent() {
+    Student student = this.students.get(0);
+    student.setEnabled(false);
+
+    given(this.studentRepository.findById(1))
+            .willReturn(Optional.of(student));
+
+    assertThatThrownBy(() -> this.studentService.deactivateStudent(1))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Student is already deactivated.");
+
+    verify(this.studentRepository, never())
+            .save(any(Student.class));
+}
 
     @Test
+void testDeactivateMissingStudent() {
+    given(this.studentRepository.findById(999))
+            .willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> this.studentService.deactivateStudent(999))
+            .isInstanceOf(ObjectNotFoundException.class);
+
+    verify(this.studentRepository, never())
+            .save(any(Student.class));
+}
+@Test
+
     void testDeleteStudent() {
         // Given
         given(this.studentRepository.findById(1)).willReturn(Optional.of(this.students.get(0)));

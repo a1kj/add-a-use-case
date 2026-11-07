@@ -305,6 +305,9 @@ class EvaluationServiceTest {
         given(this.clock.getZone()).willReturn(fixedClock.getZone());
 
         PeerEvaluation newPeerEvaluation = new PeerEvaluation("2023-W31", amanda, woody, List.of(), "public comment", "private comment");
+        given(this.studentRepository.findById(
+        newPeerEvaluation.getEvaluatee().getId()))
+        .willReturn(Optional.of(newPeerEvaluation.getEvaluatee()));
         given(this.evaluationRepository.save(newPeerEvaluation)).willReturn(newPeerEvaluation);
 
         // When
@@ -323,6 +326,9 @@ class EvaluationServiceTest {
         // Active weeks are "2023-W31", "2023-W32", "2023-W33", "2023-W34", "2023-W35", "2023-W36", "2023-W37", "2023-W38", "2023-W39", "2023-W40"
         // 2023-W19 is not in the active weeks for the section
         PeerEvaluation newPeerEvaluation = new PeerEvaluation("2023-W19", eric, woody, List.of(), "public comment", "private comment");
+        given(this.studentRepository.findById(
+        newPeerEvaluation.getEvaluatee().getId()))
+        .willReturn(Optional.of(newPeerEvaluation.getEvaluatee()));
 
         // When
         Throwable throwable = catchThrowable(() -> this.evaluationService.addPeerEvaluation(newPeerEvaluation));
@@ -343,6 +349,9 @@ class EvaluationServiceTest {
 
         PeerEvaluation newPeerEvaluation = new PeerEvaluation("2023-W33", eric, woody, List.of(), "public comment", "private comment");
 
+        given(this.studentRepository.findById(
+        newPeerEvaluation.getEvaluatee().getId()))
+        .willReturn(Optional.of(newPeerEvaluation.getEvaluatee()));
         // When
         Throwable throwable = catchThrowable(() -> this.evaluationService.addPeerEvaluation(newPeerEvaluation));
 
@@ -361,6 +370,10 @@ class EvaluationServiceTest {
         given(this.clock.getZone()).willReturn(fixedClock.getZone());
 
         PeerEvaluation newPeerEvaluation = new PeerEvaluation("2023-W31", eric, woody, List.of(), "public comment", "private comment");
+
+        given(this.studentRepository.findById(
+        newPeerEvaluation.getEvaluatee().getId()))
+        .willReturn(Optional.of(newPeerEvaluation.getEvaluatee()));
 
         // When
         Throwable throwable = catchThrowable(() -> this.evaluationService.addPeerEvaluation(newPeerEvaluation));
@@ -385,6 +398,10 @@ class EvaluationServiceTest {
 
         PeerEvaluation newPeerEvaluation = new PeerEvaluation("2023-W31", tracy, this.eric, List.of(), "public comment", "private comment");
 
+        given(this.studentRepository.findById(
+        newPeerEvaluation.getEvaluatee().getId()))
+        .willReturn(Optional.of(newPeerEvaluation.getEvaluatee()));
+        
         // When
         Throwable throwable = catchThrowable(() -> this.evaluationService.addPeerEvaluation(newPeerEvaluation));
 
@@ -403,6 +420,9 @@ class EvaluationServiceTest {
         given(this.clock.getZone()).willReturn(fixedClock.getZone());
 
         PeerEvaluation newPeerEvaluation = new PeerEvaluation("2023-W31", john, eric, List.of(), "public comment", "private comment");
+        given(this.studentRepository.findById(
+        newPeerEvaluation.getEvaluatee().getId()))
+        .willReturn(Optional.of(newPeerEvaluation.getEvaluatee()));
         given(this.evaluationRepository.findByWeekAndEvaluatorIdAndEvaluateeId("2023-W31", 3, 4)).willReturn(Optional.of(newPeerEvaluation));
 
         // When
@@ -412,6 +432,57 @@ class EvaluationServiceTest {
         assertThat(throwable)
                 .isInstanceOf(PeerEvaluationIllegalArgumentException.class)
                 .hasMessage("You have already submitted an evaluation for " + newPeerEvaluation.getEvaluatee().getFirstName() + " in this week.");
+    }
+
+    @Test
+void testRejectEvaluationOfDeactivatedStudent() {
+    Student inactiveStudent = this.eric;
+    inactiveStudent.setEnabled(false);
+
+    PeerEvaluation evaluation = new PeerEvaluation(
+            "2023-W31",
+            this.john,
+            inactiveStudent,
+            List.of(),
+            "public comment",
+            "private comment"
+    );
+
+    given(this.studentRepository.findById(inactiveStudent.getId()))
+            .willReturn(Optional.of(inactiveStudent));
+
+    assertThatThrownBy(() ->
+            this.evaluationService.addPeerEvaluation(evaluation))
+            .isInstanceOf(PeerEvaluationIllegalArgumentException.class)
+            .hasMessage(
+                    "Cannot submit a peer evaluation for a deactivated student."
+            );
+
+    verify(this.evaluationRepository, org.mockito.Mockito.never())
+            .save(any(PeerEvaluation.class));
+}
+    @Test
+    void testRejectUpdateOfEvaluationForDeactivatedStudent() {
+        Student inactiveStudent = this.eric;
+        inactiveStudent.setEnabled(false);
+        PeerEvaluation stored = new PeerEvaluation(
+                "2023-W31", this.john, inactiveStudent, List.of(),
+                "original public comment", "original private comment");
+        stored.setPeerEvaluationId(1);
+        PeerEvaluation requested = new PeerEvaluation(
+                "2023-W31", this.john, inactiveStudent, List.of(),
+                "changed public comment", "changed private comment");
+
+        given(this.evaluationRepository.findById(1)).willReturn(Optional.of(stored));
+        given(this.studentRepository.findById(inactiveStudent.getId()))
+                .willReturn(Optional.of(inactiveStudent));
+
+        assertThatThrownBy(() -> this.evaluationService.updatePeerEvaluation(1, requested))
+                .isInstanceOf(PeerEvaluationIllegalArgumentException.class)
+                .hasMessage("Cannot update a peer evaluation for a deactivated student.");
+        assertThat(stored.getPublicComment()).isEqualTo("original public comment");
+        assertThat(stored.getPrivateComment()).isEqualTo("original private comment");
+        verify(this.evaluationRepository, times(0)).save(any(PeerEvaluation.class));
     }
 
     @Test
@@ -430,6 +501,7 @@ class EvaluationServiceTest {
         update.setPeerEvaluationId(1);
 
         given(this.evaluationRepository.findById(1)).willReturn(Optional.of(oldPeerEvaluation));
+        given(this.studentRepository.findById(this.eric.getId())).willReturn(Optional.of(this.eric));
         given(this.evaluationRepository.save(oldPeerEvaluation)).willReturn(oldPeerEvaluation);
 
         // When
@@ -459,6 +531,7 @@ class EvaluationServiceTest {
         update.setPeerEvaluationId(1);
 
         given(this.evaluationRepository.findById(1)).willReturn(Optional.of(oldPeerEvaluation));
+        given(this.studentRepository.findById(this.eric.getId())).willReturn(Optional.of(this.eric));
 
         // When
         Throwable throwable = catchThrowable(() -> this.evaluationService.updatePeerEvaluation(1, update));
@@ -482,6 +555,7 @@ class EvaluationServiceTest {
         update.setPeerEvaluationId(1);
 
         given(this.evaluationRepository.findById(1)).willReturn(Optional.of(oldPeerEvaluation));
+        given(this.studentRepository.findById(this.eric.getId())).willReturn(Optional.of(this.eric));
 
         // When
         Throwable throwable = catchThrowable(() -> this.evaluationService.updatePeerEvaluation(1, update));

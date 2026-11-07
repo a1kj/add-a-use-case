@@ -9,8 +9,6 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -114,16 +112,22 @@ public class StudentService {
         oldStudent.setLastName(update.getLastName());
         oldStudent.setEmail(update.getEmail());
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // If the user is an admin, then the user can update all the fields
-        if (authentication.getAuthorities().stream().anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_instructor"))) {
-            oldStudent.setEnabled(update.isEnabled());
-//            oldStudent.setRoles(update.getRoles());
-        }
 
         return this.studentRepository.save(oldStudent);
     }
+
+    public Student deactivateStudent(Integer studentId) {
+    Student student = this.studentRepository.findById(studentId)
+            .orElseThrow(() -> new ObjectNotFoundException("student", studentId));
+
+    if (!student.isEnabled()) {
+        throw new IllegalStateException("Student is already deactivated.");
+    }
+
+    student.setEnabled(false);
+
+    return this.studentRepository.save(student);
+}
 
     public void deleteStudent(Integer studentId) {
         this.studentRepository.findById(studentId)

@@ -39,17 +39,27 @@
           <el-tag type="danger" v-else>Disabled</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Operations" width="120">
-        <template #default="{ row }">
-          <el-button
-            icon="Edit"
-            circle
-            plain
-            type="primary"
-            @click.stop="showEditStudentDialog(row)"
-          ></el-button>
-        </template>
-      </el-table-column>
+     
+<el-table-column label="Operations" width="220">
+  <template #default="{ row }">
+    <el-button
+      icon="Edit"
+      circle
+      plain
+      type="primary"
+      @click.stop="showEditStudentDialog(row)"
+    />
+    <el-button
+      v-if="row.enabled"
+      type="danger"
+      size="small"
+      @click.stop="confirmDeactivate(row)"
+    >
+      Deactivate
+    </el-button>
+  </template>
+</el-table-column>
+
       <template #empty>
         <el-empty description="No data is available." />
       </template>
@@ -78,7 +88,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { searchStudents } from '@/apis/student'
+import { searchStudents, deactivateStudent } from '@/apis/student'
 import type {
   SearchStudentByCriteriaResponse,
   Student,
@@ -86,8 +96,8 @@ import type {
 } from '@/apis/student/types'
 import { useSettingsStore } from '@/stores/settings'
 import EditStudentForm from './EditStudentForm.vue'
-import { ElMessage } from 'element-plus'
-
+import { ElMessage, ElMessageBox } from 'element-plus'
+  
 const searchCriteria = ref<StudentSearchCriteria>({
   sectionId: NaN,
   firstName: '',
@@ -159,6 +169,37 @@ function showEditStudentDialog(student: Student) {
   studentBeingEditedId.value = student.id as number
 }
 
+async function confirmDeactivate(student: Student) {
+  try {
+    await ElMessageBox.confirm(
+      `Deactivate ${student.firstName} ${student.lastName}? ` +
+        'The student will lose account access and stop receiving ' +
+        'reminders. Teammates will no longer be required to ' +
+        'evaluate this student. Existing activity reports, ' +
+        'peer evaluations, and team membership will be preserved.',
+      'Confirm Student Deactivation',
+      {
+        confirmButtonText: 'Deactivate',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+        distinguishCancelAndClose: true
+      }
+    )
+  } catch {
+    // Canceling or closing makes no API request.
+    return
+  }
+
+  try {
+    await deactivateStudent(student.id as number)
+    ElMessage.success('Student deactivated successfully.')
+    await loadStudents()
+  } catch {
+    ElMessage.error('Could not deactivate student.')
+  }
+}
+
+  
 function closeDialog() {
   dialogVisible.value = false
   loadStudents()
