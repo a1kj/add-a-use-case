@@ -219,6 +219,7 @@ void testDeactivateMissingStudent() {
     verify(this.studentRepository, never())
             .save(any(Student.class));
 }
+@Test
 
     void testDeleteStudent() {
         // Given
