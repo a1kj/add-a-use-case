@@ -54,12 +54,15 @@ public boolean canCurrentUserDeactivateStudent(Integer studentId) {
         return false;
     }
 
-    Integer currentUserId = this.userUtils.getUserId();
+   Integer currentUserId = this.userUtils.getUserId();
 
-    if (currentUserId == null ||
-            !this.userUtils.hasRole("ROLE_instructor")) {
-        return false;
-    }
+if (currentUserId == null) {
+    return false;
+}
+
+if (!this.userUtils.hasRole("ROLE_instructor")) {
+    return false;
+}
 
     var section = student.getSection();
 
